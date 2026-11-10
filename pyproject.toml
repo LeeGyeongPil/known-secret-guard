@@ -1,6 +1,6 @@
 [project]
 name = "known-secret-guard"
-version = "0.1.0"
+version = "0.1.1"
 description = "Egress check for secrets you already know: catches base64/URL/hex/HTML/split variants that pattern scanners miss."
 readme = "README.md"
 requires-python = ">=3.10"
