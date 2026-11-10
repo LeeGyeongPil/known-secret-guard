@@ -29,7 +29,7 @@ git clone https://github.com/LeeGyeongPil/known-secret-guard && cd known-secret-
 uv run known-secret-guard --version
 ```
 ```text
-known-secret-guard 0.1.1
+known-secret-guard 0.1.2
 ```
 
 - 파이썬 3.10 이상(3.10과 3.12에서 테스트 통과를 확인했고, CI 매트릭스는 3.10·3.12·3.14).
@@ -296,7 +296,7 @@ uv run pytest -q
 ```
 ```text
 ...........................                                               [100%]
-27 passed in 0.45s
+31 passed in 0.45s
 ```
 
 ![pytest 27개 통과](docs/images/06-pytest-pass.png)
