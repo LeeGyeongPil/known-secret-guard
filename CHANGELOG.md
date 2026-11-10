@@ -5,6 +5,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-11-10
+
+### Fixed
+- `.env` parsing: a trailing `# comment` after a value (quoted or not) is no longer registered as part of the secret, so encoded leaks of the real value are caught.
+
 ## [0.1.1] - 2026-11-10
 
 ### Changed
