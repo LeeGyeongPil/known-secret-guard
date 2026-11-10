@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import fnmatch
 import os
+import re
 from collections.abc import Iterable, Mapping
 
 from .findings import GuardConfigError
@@ -45,8 +46,22 @@ def from_env_globs(patterns: Iterable[str], *, environ: Mapping[str, str] | None
     }
 
 
+def _clean_value(raw: str) -> str:
+    """Strip quotes and a trailing ``# comment`` from the text after ``=``."""
+    value = raw.strip()
+    if value[:1] in ("\"", "'"):
+        close = value.find(value[0], 1)  # closing quote matching the opening one
+        if close != -1:
+            return value[1:close]  # anything after the closing quote is dropped
+    # Unquoted: a '#' only starts a comment when preceded by whitespace.
+    match = re.search(r"\s#", value)
+    if match:
+        value = value[:match.start()]
+    return value.rstrip()
+
+
 def parse_env_text(text: str) -> dict[str, str]:
-    """Parse ``NAME=value`` lines. ``#`` comments, ``export`` prefix, matching quotes stripped."""
+    """Parse ``NAME=value`` lines. Full-line and trailing ``#`` comments, ``export`` prefix, matching quotes stripped."""
     out: dict[str, str] = {}
     for line in text.splitlines():
         line = line.strip()
@@ -56,8 +71,7 @@ def parse_env_text(text: str) -> dict[str, str]:
             line = line[len("export "):].lstrip()
         name, value = line.split("=", 1)
         name = name.strip()
-        if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
-            value = value[1:-1]
+        value = _clean_value(value)
         if name and value:
             out[name] = value
     return out
