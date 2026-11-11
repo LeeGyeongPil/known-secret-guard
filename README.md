@@ -1,5 +1,7 @@
 # known-secret-guard
 
+**한국어** | [English](README.en.md)
+
 > **English summary** — A zero-dependency Python library, CLI and agent `PreToolUse` hook that checks text an agent is about to send out for secrets you *already know* (environment variables, `.env` entries). It matches the raw value and its disguises: base64 (any alignment), URL, hex, HTML entities, split halves, zero-width characters. Reports contain names, variant codes and field paths only, never the value. Install: `uv add git+https://github.com/LeeGyeongPil/known-secret-guard`. Limits: it does not catch encryption, hashing, custom encodings or multi-call splitting (see "Limits").
 
 이미 아는 비밀값이 base64·URL 인코딩·16진수·반으로 쪼갠 모습으로 바뀌어 나가는 것을 잡는, 출구 검사용 파이썬 라이브러리입니다.
