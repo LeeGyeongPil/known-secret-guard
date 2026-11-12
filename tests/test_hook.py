@@ -1,5 +1,7 @@
 """AC-8: PreToolUse hook decisions."""
 
+import _lang  # noqa: F401  (pins the output language to English)
+
 import io
 import json
 

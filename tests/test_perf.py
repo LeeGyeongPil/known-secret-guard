@@ -1,5 +1,7 @@
 """AC-10 (performance part): 50 secrets x 1 MB of base64 noise stays fast and clean."""
 
+import _lang  # noqa: F401  (pins the output language to English)
+
 import base64
 import random
 import time

@@ -1,5 +1,7 @@
 """AC-1 and AC-7: CLI behaviour and exit codes."""
 
+import _lang  # noqa: F401  (pins the output language to English)
+
 import io
 
 import pytest

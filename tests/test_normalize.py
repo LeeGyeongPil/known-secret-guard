@@ -1,5 +1,7 @@
 """AC-4: normalisation is applied to the secret AND the outgoing text."""
 
+import _lang  # noqa: F401  (pins the output language to English)
+
 from known_secret_guard import Guard
 from known_secret_guard.normalize import normalize
 

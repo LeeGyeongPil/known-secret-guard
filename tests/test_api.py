@@ -1,5 +1,7 @@
 """AC-9: library API."""
 
+import _lang  # noqa: F401  (pins the output language to English)
+
 import pytest
 
 from known_secret_guard import Finding, Guard, GuardConfigError, LeakDetected, VARIANT_CODES

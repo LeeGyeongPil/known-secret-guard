@@ -1,5 +1,7 @@
 """Regression: trailing comments in .env lines must not become part of the secret."""
 
+import _lang  # noqa: F401  (pins the output language to English)
+
 from known_secret_guard.cli import main
 from known_secret_guard.sources import parse_env_text
 

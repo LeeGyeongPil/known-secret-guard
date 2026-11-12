@@ -1,5 +1,7 @@
 """AC-3: base64 stable segments catch a secret anywhere in a base64'd body."""
 
+import _lang  # noqa: F401  (pins the output language to English)
+
 import base64
 import json
 

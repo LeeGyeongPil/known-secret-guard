@@ -1,5 +1,7 @@
 """AC-5: no false positives on a negative corpus; min length and exclude behave."""
 
+import _lang  # noqa: F401  (pins the output language to English)
+
 import glob
 import json
 import os

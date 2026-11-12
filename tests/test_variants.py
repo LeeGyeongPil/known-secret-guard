@@ -1,5 +1,7 @@
 """AC-2: 16 disguises x 3 fake secrets = 48 samples, all caught with the expected code."""
 
+import _lang  # noqa: F401  (pins the output language to English)
+
 from known_secret_guard import Guard
 from known_secret_guard.demo import samples
 

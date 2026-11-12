@@ -1,5 +1,7 @@
 """AC-6: no output path ever contains a secret value or a variant string."""
 
+import _lang  # noqa: F401  (pins the output language to English)
+
 import io
 import json
 
