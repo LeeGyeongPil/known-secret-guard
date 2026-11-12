@@ -137,7 +137,8 @@ def test_invalid_lang_reports_choices(clean_lang_env, capsys):
     with pytest.raises(SystemExit):
         main(["--lang", "xx", "demo"])
     err = capsys.readouterr().err
-    assert "invalid choice" in err and "'en'" in err and "'ko'" in err
+    # argparse quotes the choices only on some Python versions (3.12.x), so match without quotes
+    assert "invalid choice" in err and "en" in err and "ko" in err and "xx" in err
 
 
 def test_machine_output_is_language_independent(clean_lang_env, tmp_path, env_file, capsys, monkeypatch):
