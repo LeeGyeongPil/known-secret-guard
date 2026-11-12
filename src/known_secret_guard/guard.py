@@ -9,6 +9,7 @@ from typing import Any
 
 from . import sources
 from .findings import Finding, GuardConfigError, LeakDetected
+from .i18n import t
 from .normalize import normalize
 from .variants import build_variants
 
@@ -33,7 +34,7 @@ class Guard:
     def __init__(self, secrets: Mapping[str, str] | None = None, *, min_length: int = 8,
                  exclude: Iterable[str] = ()) -> None:
         if min_length < 1:
-            raise GuardConfigError("min_length must be >= 1")
+            raise GuardConfigError(t("min_length_bad"))
         self.min_length = min_length
         self._exclude = frozenset(exclude)
         self._entries: dict[str, _Entry] = {}
@@ -63,9 +64,9 @@ class Guard:
     def add(self, name: str, value: str) -> None:
         """Register one more secret."""
         if not isinstance(name, str) or not name:
-            raise GuardConfigError("secret name must be a non-empty string")
+            raise GuardConfigError(t("name_bad"))
         if not isinstance(value, str):
-            raise GuardConfigError(f"value of {name!r} must be str, got {type(value).__name__}")
+            raise GuardConfigError(t("value_bad", name=repr(name), type=type(value).__name__))
         if name in self._exclude:
             return
         if len(value) < self.min_length:
@@ -101,10 +102,7 @@ class Guard:
     def scan(self, data: Any, *, field: str = "") -> list[Finding]:
         """Return findings for ``str``, ``bytes`` or nested ``dict``/``list`` data."""
         if not self._entries:
-            raise GuardConfigError(
-                "no secrets registered: pass names that exist in the environment, "
-                "an env file, or Guard({'NAME': 'value'})."
-            )
+            raise GuardConfigError(t("no_secrets_api"))
         findings: list[Finding] = []
         self._walk(data, field, findings, 0)
         return findings

@@ -5,14 +5,17 @@ comment with a hidden HTML-comment instruction and builds the tool call a
 hijacked agent would build: a curl whose query carries the API key base64-encoded.
 The call then passes (1) a naive pattern-only check and (2) the real Guard.
 
-Run: uv run python examples/agent_exfil_sim.py
+Run: uv run python examples/agent_exfil_sim.py [--lang en|ko]
+Language order: --lang > KNOWN_SECRET_GUARD_LANG > LC_ALL > LC_MESSAGES > LANG (else en).
 """
 
 import re
 import sys
+from collections.abc import Sequence
 
 from known_secret_guard import Guard, LeakDetected
-from known_secret_guard.demo import PRACTICE_BANNER, exfil_command, fake_secrets
+from known_secret_guard.demo import exfil_command, fake_secrets
+from known_secret_guard.i18n import lang_from_argv, resolve_lang, set_lang, t
 
 ISSUE_COMMENT = (
     "Thanks for the report, looking into it.\n"
@@ -30,22 +33,31 @@ def scripted_agent(comment: str) -> dict:
     return {"tool_name": "Bash", "tool_input": {"command": exfil_command()}}
 
 
-def main() -> int:
-    print(PRACTICE_BANNER)
+def main(argv: Sequence[str] | None = None) -> int:
+    arg_list = list(sys.argv[1:] if argv is None else argv)
+    set_lang(resolve_lang(lang_from_argv(arg_list)))  # same language rule as the CLI
+    try:
+        return _run()
+    finally:
+        set_lang(None)
+
+
+def _run() -> int:
+    print(t("banner"))
     call = scripted_agent(ISSUE_COMMENT)
-    print(f"agent wants to run a {call['tool_name']} call ({len(call['tool_input']['command'])} chars)")
+    print(t("sim_wants", tool=call["tool_name"], chars=len(call["tool_input"]["command"])))
 
     command = call["tool_input"]["command"]
     naive_hit = any(p.search(command) for p in NAIVE_PATTERNS)
-    print(f"pattern-only check : {'blocked' if naive_hit else 'PASSED (leak goes through)'}")
+    print(t("sim_naive_label") + ": " + t("sim_naive_blocked" if naive_hit else "sim_naive_passed"))
 
     guard = Guard(fake_secrets())
     try:
         guard.check(call["tool_input"], field="tool_input")
     except LeakDetected as exc:
-        print(f"known-secret-guard : BLOCKED -> {exc.findings[0]}")
+        print(t("sim_guard_label") + ": " + t("sim_guard_blocked", finding=exc.findings[0]))
         return 0
-    print("known-secret-guard : passed (unexpected)")
+    print(t("sim_guard_label") + ": " + t("sim_guard_unexpected"))
     return 1
 
 

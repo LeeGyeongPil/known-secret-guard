@@ -8,13 +8,14 @@ import re
 from collections.abc import Iterable, Mapping
 
 from .findings import GuardConfigError
+from .i18n import t
 
 
 def from_env_names(names: Iterable[str], *, missing: str = "skip",
                    environ: Mapping[str, str] | None = None) -> dict[str, str]:
     """Read the named environment variables; ``missing`` is ``"skip"`` or ``"error"``."""
     if missing not in ("skip", "error"):
-        raise GuardConfigError(f"missing must be 'skip' or 'error', got {missing!r}")
+        raise GuardConfigError(t("missing_arg", value=repr(missing)))
     env = os.environ if environ is None else environ
     out: dict[str, str] = {}
     absent: list[str] = []
@@ -28,10 +29,7 @@ def from_env_names(names: Iterable[str], *, missing: str = "skip",
         else:
             out[name] = value
     if absent and missing == "error":
-        raise GuardConfigError(
-            "environment variable(s) not set or empty: " + ", ".join(absent)
-            + ". Export them before starting, or pass missing='skip'."
-        )
+        raise GuardConfigError(t("env_unset", names=", ".join(absent)))
     return out
 
 
@@ -83,7 +81,7 @@ def from_env_file(path: str | os.PathLike[str]) -> dict[str, str]:
         with open(path, encoding="utf-8") as fh:
             return parse_env_text(fh.read())
     except OSError as exc:
-        raise GuardConfigError(f"cannot read env file {os.fspath(path)!r}: {exc.strerror}. "
-                               "Check the path and permissions.") from exc
+        raise GuardConfigError(
+            t("env_file_unreadable", path=repr(os.fspath(path)), reason=exc.strerror)) from exc
     except UnicodeDecodeError as exc:
-        raise GuardConfigError(f"env file {os.fspath(path)!r} is not valid UTF-8.") from exc
+        raise GuardConfigError(t("env_file_not_utf8", path=repr(os.fspath(path)))) from exc

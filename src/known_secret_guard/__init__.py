@@ -8,7 +8,7 @@ from .findings import Finding, GuardConfigError, LeakDetected
 from .guard import Guard
 from .variants import VARIANT_CODES
 
-__version__ = "0.1.3"
+__version__ = "0.2.0"
 
 __all__ = [
     "Finding",

@@ -15,8 +15,10 @@ import urllib.parse
 from collections.abc import Iterator
 
 from .guard import Guard
+from .i18n import pad, t
 from .variants import build_variants
 
+# English banner kept for scripts that import it; the CLI prints banner text from i18n.
 PRACTICE_BANNER = "[practice mode] fake secrets built at run time, real matching code, no LLM involved"
 
 
@@ -110,7 +112,8 @@ def run_demo() -> tuple[list[str], bool]:
     """Scan the 48 + 3 samples. Returns ``(output_lines, all_ok)``."""
     secrets = fake_secrets()
     guard = Guard(secrets)
-    lines = [PRACTICE_BANNER, "", f"{'sample':<42} {'hidden as':<28} result"]
+    lines = [t("banner"), "",
+             f"{pad(t('demo_col_sample'), 42)} {pad(t('demo_col_hidden'), 28)} {t('demo_col_result')}"]
     caught = total = 0
     for name, stem, disguise, text in samples():
         total += 1
@@ -123,7 +126,8 @@ def run_demo() -> tuple[list[str], bool]:
         neg_total += 1
         hits = guard.scan(text)
         neg_clean += not hits
-        lines.append(f"{'negative__' + label:<42} {'(must stay clean)':<28} {'clean' if not hits else 'FALSE POSITIVE'}")
+        lines.append(f"{'negative__' + label:<42} {pad(t('demo_must_clean'), 28)} "
+                     f"{'clean' if not hits else 'FALSE POSITIVE'}")
     # Count how many secret values / variant strings appear in what we are about to print.
     body = "\n".join(lines)
     printed = sum(
@@ -132,5 +136,5 @@ def run_demo() -> tuple[list[str], bool]:
         for _code, text in build_variants(value)
     )
     lines.append("")
-    lines.append(f"caught {caught}/{total} · negative {neg_clean}/{neg_total} clean · secret values printed: {printed}")
+    lines.append(t("demo_summary", caught=caught, total=total, neg=neg_clean, neg_total=neg_total, printed=printed))
     return lines, caught == total and neg_clean == neg_total and printed == 0

@@ -14,6 +14,7 @@ from collections.abc import Iterator
 from typing import Any, TextIO
 
 from ..guard import Guard
+from ..i18n import t
 
 _MAX_DEPTH = 64
 
@@ -60,7 +61,7 @@ def run(stdin: TextIO, stdout: TextIO, stderr: TextIO, guard: Guard, *, deny_env
     try:
         return _run(stdin, stdout, stderr, guard, deny_env_refs)
     except Exception as exc:  # noqa: BLE001 - deliberate catch-all for fail closed
-        stderr.write(f"known-secret-guard: hook failed ({exc.__class__.__name__}); blocking.\n")
+        stderr.write(t("hook_failed", cls=exc.__class__.__name__) + "\n")
         return 2
 
 
@@ -68,10 +69,10 @@ def _run(stdin: TextIO, stdout: TextIO, stderr: TextIO, guard: Guard, deny_env_r
     try:
         payload = json.load(stdin)
     except (json.JSONDecodeError, UnicodeDecodeError) as exc:
-        stderr.write(f"known-secret-guard: hook input is not valid JSON ({exc.__class__.__name__}); blocking.\n")
+        stderr.write(t("hook_bad_json", cls=exc.__class__.__name__) + "\n")
         return 2
     if not isinstance(payload, dict):
-        stderr.write("known-secret-guard: hook input must be a JSON object; blocking.\n")
+        stderr.write(t("hook_not_object") + "\n")
         return 2
     tool_input = payload.get("tool_input")
     if tool_input is None:
