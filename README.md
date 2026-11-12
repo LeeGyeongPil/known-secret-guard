@@ -29,7 +29,7 @@ git clone https://github.com/LeeGyeongPil/known-secret-guard && cd known-secret-
 uv run known-secret-guard --version
 ```
 ```text
-known-secret-guard 0.1.3
+known-secret-guard 0.2.0
 ```
 
 - Python 3.10 or later (tests were confirmed to pass on 3.10 and 3.12, and the CI matrix is 3.10 · 3.12 · 3.14).
@@ -78,7 +78,7 @@ How to read it: it means `FAKE_API_KEY` was found in the `body.messages[1].conte
 uv run known-secret-guard demo
 ```
 
-It builds, in memory, 48 samples in which 3 kinds of fake secrets (token-shaped, a random key without a prefix, a password with special characters) are hidden in 16 ways, plus 3 negative samples, and checks them with the real matching code. The first line prints `[practice mode] … no LLM involved`. It is a **reproduction without an LLM**, so it does not prove that a real agent always behaves this way. When you attach it to a real agent and test, the model-call side (especially shared resources such as a local model) may be slow, and that delay has nothing to do with this library. The check itself finishes 50 secrets × about 1MB of text within 1 second (confirmed by a test).
+It builds, in memory, 48 samples in which 3 kinds of fake secrets (token-shaped, a random key without a prefix, a password with special characters) are hidden in 16 ways, plus 3 negative samples, and checks them with the real matching code. The first line prints `[practice mode] … no LLM involved`. (On a machine with a Korean locale such as `LANG=ko_KR.UTF-8` the text is Korean by default; add `--lang en` for English, see [Output language](#output-language-english--korean).) It is a **reproduction without an LLM**, so it does not prove that a real agent always behaves this way. When you attach it to a real agent and test, the model-call side (especially shared resources such as a local model) may be slow, and that delay has nothing to do with this library. The check itself finishes 50 secrets × about 1MB of text within 1 second (confirmed by a test).
 
 To also create the sample files:
 
@@ -182,6 +182,39 @@ The paths vary with the value of `$KSG_SAMPLES`.
 
 *Figure 3. A `name:variant code` appears for each file. `NORM_RAW` is a case that became visible only after zero-width characters were removed.*
 
+### Output language (English / Korean)
+
+The human-readable text (help, usage errors, warnings, errors, the `demo` table and summary, the hook's stderr messages) comes in English or Korean. The language is chosen in this order, and the first one that is set wins:
+
+1. `--lang en|ko` (accepted before or after any subcommand)
+2. the `KNOWN_SECRET_GUARD_LANG` environment variable
+3. `LC_ALL`, then `LC_MESSAGES`, then `LANG`
+
+A value that does not start with `ko` (for example `C` or `fr_FR.UTF-8`) means English. A value other than `en` or `ko` for `--lang` is a usage error (exit code 2).
+
+```bash
+echo hi > "$KSG_SAMPLES/hello.txt"
+uv run known-secret-guard --lang ko scan --env NOPE "$KSG_SAMPLES/hello.txt"; echo "exit=$?"
+KNOWN_SECRET_GUARD_LANG=ko uv run known-secret-guard scan --env NOPE "$KSG_SAMPLES/hello.txt"; echo "exit=$?"
+```
+```text
+known-secret-guard: 오류: 등록된 비밀값이 없습니다. --env NAME1,NAME2, --env-pattern '*_TOKEN' 또는 --env-file PATH 를 사용하고, 해당 변수가 이 프로세스에 있는지 확인하십시오.
+exit=2
+known-secret-guard: 오류: 등록된 비밀값이 없습니다. --env NAME1,NAME2, --env-pattern '*_TOKEN' 또는 --env-file PATH 를 사용하고, 해당 변수가 이 프로세스에 있는지 확인하십시오.
+exit=2
+```
+
+(The Korean message says: "error: no secrets registered. Use --env NAME1,NAME2, --env-pattern '*_TOKEN' or --env-file PATH, and check that the variables exist in this process.")
+
+![The same scan errors and warnings printed with --lang en](docs/images/07-language-errors.png)
+
+*Figure 4. Error and warning lines of `scan` in the selected language. The `clean` line is the same in every language.*
+
+What does not change with the language: `--json` output, the `LEAK <file> NAME:VARIANT` and `clean <file>` lines, variant codes, the hook's `deny` JSON (including the `known-secret-guard: NAME:VARIANT at <path>` reason) and exit codes, so scripts that parse them keep working. Two things to know:
+
+- If your locale is Korean (`LANG=ko_KR.UTF-8`) and you upgraded from 0.1.x, the messages are now Korean by default. Set `KNOWN_SECRET_GUARD_LANG=en` to keep English.
+- `GuardConfigError` messages raised by the library API follow the same environment language. Messages that the operating system supplies (such as "No such file or directory") stay in English.
+
 ## Usage examples
 
 ### 1. Check a tool call the agent was about to send out
@@ -198,9 +231,11 @@ pattern-only check : PASSED (leak goes through)
 known-secret-guard : BLOCKED -> LEAK tool_input.command FAKE_API_KEY:B64_STD_K0
 ```
 
+(The script follows the same language choice as the CLI: add `--lang ko`, or set `KNOWN_SECRET_GUARD_LANG=ko`, for Korean output. The `LEAK ...` finding text is not translated.)
+
 ![A simple pattern check passes; known-secret-guard blocks](docs/images/05-agent-sim-blocked.png)
 
-*Figure 4. A check that uses only a prefix regex lets a key converted to base64 slip by, and this guard blocks it.*
+*Figure 5. A check that uses only a prefix regex lets a key converted to base64 slip by, and this guard blocks it.*
 
 ### 2. Use it as an agent PreToolUse hook
 
@@ -239,7 +274,7 @@ For clean input (`hook_input_clean.json`) it prints nothing and exits with code 
 
 ![The hook prints deny JSON. The reason has no secret value](docs/images/04-hook-deny.png)
 
-*Figure 5. The PreToolUse hook's deny response.*
+*Figure 6. The PreToolUse hook's deny response.*
 
 Things to note:
 - If the input is malformed or the configuration is wrong, the hook ends with exit code 2 (fail closed: it doesn't let things through when it fails).
@@ -293,6 +328,8 @@ Also, low-entropy values made of only digits or hex letters can produce false po
 | Normal text is flagged | A low-entropy value, etc. | Exclude it with `--exclude NAME` or check the value |
 | The hook always exits 2 | The hook environment has no secrets | Use `--env-file`, check with `variants` |
 | `cannot read env file` | Wrong path or permissions | Check the path and permissions |
+| Messages suddenly appear in Korean (or English) | The language follows `--lang`, then `KNOWN_SECRET_GUARD_LANG`, then `LC_ALL`/`LC_MESSAGES`/`LANG` | Pass `--lang en` or set `KNOWN_SECRET_GUARD_LANG=en` (see [Output language](#output-language-english--korean)) |
+| `argument --lang: invalid choice` (exit 2) | Only `en` and `ko` are accepted | Use `--lang en` or `--lang ko` |
 
 ## Development and contributing
 
@@ -300,13 +337,13 @@ Also, low-entropy values made of only digits or hex letters can produce false po
 uv run pytest -q
 ```
 ```text
-...............................                                           [100%]
-31 passed in 0.45s
+......................................................                                           [100%]
+57 passed in 0.81s
 ```
 
-![27 pytest tests pass](docs/images/06-pytest-pass.png)
+![57 pytest tests pass](docs/images/06-pytest-pass.png)
 
-*Figure 6. The whole regression test suite passes.*
+*Figure 7. The whole regression test suite passes.*
 
 - Fake secrets are assembled at run time and exist in the code only as strings of two or more pieces. Don't commit a finished secret-shaped string (it will be caught by the secret check).
 - Detailed structure: [docs/how-it-works.md](docs/how-it-works.md) (Korean). Security reports: [SECURITY.md](SECURITY.md).

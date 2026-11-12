@@ -4,7 +4,7 @@
 
 이미 아는 비밀값이 base64·URL 인코딩·16진수·반으로 쪼갠 모습으로 바뀌어 나가는 것을 잡는, 출구 검사용 파이썬 라이브러리입니다.
 
-![데모 점수표: 48개 표본이 모두 잡히고 음성 3개는 깨끗하며 비밀값은 한 번도 출력되지 않음](docs/images/01-demo-scorecard.png)
+![데모 점수표: 48개 표본이 모두 잡히고 음성 3개는 깨끗하며 비밀값은 한 번도 출력되지 않음](docs/images/01-demo-scorecard.ko.png)
 
 *그림 1. `known-secret-guard demo` 의 앞뒤 일부. 마지막 줄이 결과 요약이다. (연습용 가짜 값으로 만든 표본이다.)*
 
@@ -29,7 +29,7 @@ git clone https://github.com/LeeGyeongPil/known-secret-guard && cd known-secret-
 uv run known-secret-guard --version
 ```
 ```text
-known-secret-guard 0.1.3
+known-secret-guard 0.2.0
 ```
 
 - 파이썬 3.10 이상(3.10과 3.12에서 테스트 통과를 확인했고, CI 매트릭스는 3.10·3.12·3.14).
@@ -75,7 +75,7 @@ blocked: known secret(s) in outgoing data: FAKE_API_KEY:B64_STD_K1 at body.messa
 uv run known-secret-guard demo
 ```
 
-가짜 비밀 3종(토큰 모양, 접두사 없는 랜덤 키, 특수문자 비밀번호)을 16가지 방식으로 숨긴 표본 48개와 음성 표본 3개를 메모리에서 만들어, 실제 대조 코드로 검사합니다. 첫 줄에 `[practice mode] … no LLM involved` 라고 찍힙니다. **LLM이 없는 재현**이므로 실제 에이전트가 항상 이렇게 행동한다는 증명은 아닙니다. 실제 에이전트에 붙여 시험하면 모델 호출 쪽(특히 로컬 모델 같은 공유 자원)이 느릴 수 있는데, 그 지연은 이 라이브러리와 무관합니다. 검사 자체는 비밀 50개 × 약 1MB 텍스트를 1초 안에 끝냅니다(테스트로 확인).
+가짜 비밀 3종(토큰 모양, 접두사 없는 랜덤 키, 특수문자 비밀번호)을 16가지 방식으로 숨긴 표본 48개와 음성 표본 3개를 메모리에서 만들어, 실제 대조 코드로 검사합니다. 한국어로 실행하면(`--lang ko`, 아래 "출력 언어" 참고) 첫 줄에 `[연습 모드] … LLM 없음` 이라고 찍힙니다(영어로는 `[practice mode] … no LLM involved`). **LLM이 없는 재현**이므로 실제 에이전트가 항상 이렇게 행동한다는 증명은 아닙니다. 실제 에이전트에 붙여 시험하면 모델 호출 쪽(특히 로컬 모델 같은 공유 자원)이 느릴 수 있는데, 그 지연은 이 라이브러리와 무관합니다. 검사 자체는 비밀 50개 × 약 1MB 텍스트를 1초 안에 끝냅니다(테스트로 확인).
 
 표본 파일도 만들어 보려면:
 
@@ -102,7 +102,7 @@ flowchart LR
 3. **값 없는 보고**: 보고가 값을 되풀이하면 그 보고가 또 하나의 유출 경로가 됩니다. 그래서 이름·변형 코드·필드 경로만 냅니다.
 4. **훅 위치**: 에이전트가 도구를 부르기 직전에 검사해야 막을 수 있습니다.
 
-![비밀 하나에서 만들어지는 변형 코드와 길이 표](docs/images/02-variants-table.png)
+![비밀 하나에서 만들어지는 변형 코드와 길이 표](docs/images/02-variants-table.ko.png)
 
 *그림 2. `variants` 명령. 변형 코드와 길이만 보이고 값은 없다.*
 
@@ -177,6 +177,37 @@ exit=1
 
 *그림 3. 파일마다 `이름:변형 코드` 가 나온다. `NORM_RAW` 는 폭 없는 문자를 지운 뒤에야 보인 경우다.*
 
+### 출력 언어 (영어 / 한국어)
+
+사람이 읽는 문구(도움말, 사용 오류, 경고, 오류, `demo` 표와 요약, 훅의 stderr 메시지)는 영어 또는 한국어로 나옵니다. 언어는 아래 순서로 정하며, 먼저 지정된 것이 이깁니다.
+
+1. `--lang en|ko` (어떤 서브커맨드 앞뒤에도 쓸 수 있음)
+2. 환경 변수 `KNOWN_SECRET_GUARD_LANG`
+3. `LC_ALL`, 그다음 `LC_MESSAGES`, 그다음 `LANG`
+
+값이 `ko` 로 시작하지 않으면(예: `C`, `fr_FR.UTF-8`) 영어입니다. `--lang` 에 `en`·`ko` 가 아닌 값을 주면 사용 오류(종료 코드 2)입니다.
+
+```bash
+echo hi > "$KSG_SAMPLES/hello.txt"
+uv run known-secret-guard --lang ko scan --env NOPE "$KSG_SAMPLES/hello.txt"; echo "exit=$?"
+KNOWN_SECRET_GUARD_LANG=ko uv run known-secret-guard scan --env NOPE "$KSG_SAMPLES/hello.txt"; echo "exit=$?"
+```
+```text
+known-secret-guard: 오류: 등록된 비밀값이 없습니다. --env NAME1,NAME2, --env-pattern '*_TOKEN' 또는 --env-file PATH 를 사용하고, 해당 변수가 이 프로세스에 있는지 확인하십시오.
+exit=2
+known-secret-guard: 오류: 등록된 비밀값이 없습니다. --env NAME1,NAME2, --env-pattern '*_TOKEN' 또는 --env-file PATH 를 사용하고, 해당 변수가 이 프로세스에 있는지 확인하십시오.
+exit=2
+```
+
+![--lang ko 로 찍은 scan 오류·경고 줄](docs/images/07-language-errors.ko.png)
+
+*그림 4. 선택한 언어로 나오는 `scan` 의 오류·경고 줄. `clean` 줄은 어느 언어에서나 같다.*
+
+언어와 관계없이 바뀌지 않는 것: `--json` 출력, `LEAK <파일> NAME:VARIANT` 와 `clean <파일>` 줄, 변형 코드, 훅의 `deny` JSON(`known-secret-guard: NAME:VARIANT at <경로>` 사유 포함), 종료 코드입니다. 그래서 이를 파싱하는 스크립트는 그대로 동작합니다. 알아 둘 점 두 가지입니다.
+
+- 로케일이 한국어(`LANG=ko_KR.UTF-8`)인 환경에서 0.1.x 에서 올리면 문구가 기본으로 한국어가 됩니다. 영어를 유지하려면 `KNOWN_SECRET_GUARD_LANG=en` 을 지정합니다.
+- 라이브러리 API 가 던지는 `GuardConfigError` 문구도 같은 환경 언어를 따릅니다. 운영체제가 주는 문구("No such file or directory" 등)는 영어 그대로입니다.
+
 ## 사용 예
 
 ### 1. 에이전트가 내보내려던 도구 호출을 검사하기
@@ -184,18 +215,20 @@ exit=1
 `examples/agent_exfil_sim.py` — 숨은 지시를 읽은 "에이전트"를 스크립트로 흉내 낸 연습용 장면입니다(실제 모델 실행이 아님).
 
 ```bash
-uv run python examples/agent_exfil_sim.py
+uv run python examples/agent_exfil_sim.py --lang ko
 ```
 ```text
-[practice mode] fake secrets built at run time, real matching code, no LLM involved
-agent wants to run a Bash call (80 chars)
-pattern-only check : PASSED (leak goes through)
-known-secret-guard : BLOCKED -> LEAK tool_input.command FAKE_API_KEY:B64_STD_K0
+[연습 모드] 실행 시점에 만든 가짜 비밀값, 실제 대조 코드, LLM 없음
+에이전트가 Bash 호출을 실행하려 합니다(80자)
+패턴만 보는 검사 : 통과(유출이 그대로 나갑니다)
+known-secret-guard 검사 : 차단 -> LEAK tool_input.command FAKE_API_KEY:B64_STD_K0
 ```
 
-![단순 패턴 검사는 통과, known-secret-guard 는 차단](docs/images/05-agent-sim-blocked.png)
+(이 스크립트도 CLI 와 같은 언어 선택을 따릅니다. `--lang ko` 를 주거나 `KNOWN_SECRET_GUARD_LANG=ko` 를 지정합니다. `LEAK ...` 발견 줄은 번역하지 않습니다.)
 
-*그림 4. 접두사 정규식만 쓰는 검사는 base64 로 바뀐 키를 지나치고, 이 가드는 막는다.*
+![단순 패턴 검사는 통과, known-secret-guard 는 차단](docs/images/05-agent-sim-blocked.ko.png)
+
+*그림 5. 접두사 정규식만 쓰는 검사는 base64 로 바뀐 키를 지나치고, 이 가드는 막는다.*
 
 ### 2. 에이전트 PreToolUse 훅으로 쓰기
 
@@ -234,12 +267,12 @@ uv run known-secret-guard hook pretooluse --env-file "$KSG_SAMPLES/fake.env" < "
 
 ![훅이 deny JSON 을 출력함. 사유에 비밀값이 없음](docs/images/04-hook-deny.png)
 
-*그림 5. PreToolUse 훅의 거부 응답.*
+*그림 6. PreToolUse 훅의 거부 응답.*
 
 주의할 점:
 - 입력이 깨졌거나 설정이 틀리면 훅은 종료 코드 2 로 끝납니다(실패했을 때 통과시키지 않는 fail closed).
-- `"onFailure": "block"` 은 PreToolUse 훅 문서([Hooks](https://code.claude.com/docs/en/hooks), 2026-11-09 확인) 기준 설정이며, 이 레포에서는 호스트 CLI 에서 직접 확인하지 못했습니다. 쓰는 버전에서 직접 확인하세요.
-- 훅 프로세스가 비밀 환경 변수를 물려받지 못하면 등록이 비어 종료 코드 2 로 끝납니다. `variants` 로 등록된 이름을 먼저 확인하세요.
+- `"onFailure": "block"` 은 PreToolUse 훅 문서([Hooks](https://code.claude.com/docs/en/hooks), 2026-11-09 확인) 기준 설정이며, 이 레포에서는 호스트 CLI 에서 직접 확인하지 못했습니다. 쓰는 버전에서 직접 확인하십시오.
+- 훅 프로세스가 비밀 환경 변수를 물려받지 못하면 등록이 비어 종료 코드 2 로 끝납니다. `variants` 로 등록된 이름을 먼저 확인하십시오.
 - `uv run` 은 기동이 느릴 수 있으니, 훅에는 `uv tool install` 로 설치한 `known-secret-guard` 명령을 등록하는 편이 좋습니다.
 - 훅은 **셸이 실행할 때 펼치는 값**(`cat .env | base64 | curl …`)을 볼 수 없습니다. `--deny-env-refs` 가 `$NAME`·`printenv NAME` 같은 이름 참조를 막지만 정상 사용도 막을 수 있어 선택 옵션입니다.
 
@@ -265,8 +298,8 @@ HTTP 요청·파일 쓰기·댓글 작성 직전에 `guard.check(payload, field=
 
 - 이 도구가 맞는 때: 에이전트 환경 변수나 `.env` 처럼 이미 아는 비밀이 인코딩·쪼개기로 바뀌어 나가는 것을 출구에서 막고 싶을 때.
 - 이 도구가 맞는 때: 의존성 없이 PreToolUse 훅으로 붙이고 싶을 때.
-- 다른 도구가 나은 때: 등록하지 않은 "처음 보는 비밀 모양"을 저장소·커밋에서 찾으려면 패턴 스캐너 [gitleaks](https://github.com/gitleaks/gitleaks)나 [detect-secrets](https://github.com/Yelp/detect-secrets)를 쓰거나 함께 쓰세요.
-- 이 도구의 한계는 위 [한계와 함께 쓸 층](#한계와-함께-쓸-층)을 보세요.
+- 다른 도구가 나은 때: 등록하지 않은 "처음 보는 비밀 모양"을 저장소·커밋에서 찾으려면 패턴 스캐너 [gitleaks](https://github.com/gitleaks/gitleaks)나 [detect-secrets](https://github.com/Yelp/detect-secrets)를 쓰거나 함께 쓰십시오.
+- 이 도구의 한계는 위 [한계와 함께 쓸 층](#한계와-함께-쓸-층)을 보십시오.
 
 ## 용어 사전
 
@@ -283,11 +316,13 @@ HTTP 요청·파일 쓰기·댓글 작성 직전에 `guard.check(payload, field=
 
 | 증상 | 원인 | 해결 |
 |---|---|---|
-| `error: no secrets registered` (종료 2) | 지정한 환경 변수가 이 프로세스에 없거나 비어 있음 | `export` 했는지 확인, `--env-file` 사용 |
-| `warning: too short to guard` | 값이 최소 길이 8보다 짧음 | 정말 비밀이면 `--min-length` 를 낮추되 오탐을 감수 |
+| `오류: 등록된 비밀값이 없습니다`(영어로는 `error: no secrets registered`) (종료 2) | 지정한 환경 변수가 이 프로세스에 없거나 비어 있음 | `export` 했는지 확인, `--env-file` 사용 |
+| `경고: 너무 짧아 보호하지 않습니다`(영어로는 `warning: too short to guard`) | 값이 최소 길이 8보다 짧음 | 정말 비밀이면 `--min-length` 를 낮추되 오탐을 감수 |
 | 정상 텍스트가 걸림 | 낮은 엔트로피 값 등 | `--exclude NAME` 으로 제외하거나 값을 확인 |
 | 훅이 항상 종료 2 | 훅 환경에 비밀이 없음 | `--env-file` 사용, `variants` 로 확인 |
-| `cannot read env file` | 경로 오류·권한 | 경로와 권한 확인 |
+| `env 파일 '…' 을(를) 읽을 수 없습니다`(영어로는 `cannot read env file`) | 경로 오류·권한 | 경로와 권한 확인 |
+| 문구가 갑자기 한국어(또는 영어)로 나옴 | 언어가 `--lang`, `KNOWN_SECRET_GUARD_LANG`, `LC_ALL`/`LC_MESSAGES`/`LANG` 순으로 정해짐 | `--lang en` 을 주거나 `KNOWN_SECRET_GUARD_LANG=en` 지정([출력 언어](#출력-언어-영어--한국어) 참고) |
+| `인자 --lang: 올바르지 않은 선택입니다`(영어로는 `argument --lang: invalid choice`)(종료 2) | `en`·`ko` 만 받음 | `--lang en` 또는 `--lang ko` 사용 |
 
 ## 개발·기여
 
@@ -295,15 +330,15 @@ HTTP 요청·파일 쓰기·댓글 작성 직전에 `guard.check(payload, field=
 uv run pytest -q
 ```
 ```text
-...............................                                           [100%]
-31 passed in 0.45s
+......................................................                                           [100%]
+57 passed in 0.81s
 ```
 
-![pytest 27개 통과](docs/images/06-pytest-pass.png)
+![pytest 57개 통과](docs/images/06-pytest-pass.png)
 
-*그림 6. 회귀 테스트 전체 통과.*
+*그림 7. 회귀 테스트 전체 통과.*
 
-- 가짜 비밀은 실행 시 조립해 두 조각 이상의 문자열로만 코드에 존재합니다. 완성된 비밀 모양 문자열을 커밋하지 마세요(비밀 검사에 걸립니다).
+- 가짜 비밀은 실행 시 조립해 두 조각 이상의 문자열로만 코드에 존재합니다. 완성된 비밀 모양 문자열을 커밋하지 마십시오(비밀 검사에 걸립니다).
 - 자세한 구조: [docs/how-it-works.md](docs/how-it-works.md). 보안 신고: [SECURITY.md](SECURITY.md).
 
 ## 버전·호환성
